@@ -1,5 +1,6 @@
 # aws-cloudformation-k8s
 AWS Cloudformation template and bash scripts to run using aws cli to provision Kubernetes master and node.
+This is for testing only
 
 # Requirements
 * aws cli
