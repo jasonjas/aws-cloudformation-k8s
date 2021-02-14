@@ -118,7 +118,7 @@ Resources:
 
           systemctl start kubelet
 
-          sleep 5
+          sleep 10
 
           mkdir -p /root/.kube
 
