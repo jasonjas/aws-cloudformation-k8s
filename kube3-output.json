@@ -1,0 +1,12 @@
+[
+  {
+    "OutputKey": "AdmPublicIP",
+    "OutputValue": "50.17.86.41",
+    "Description": "Kubernetes Master Public IP"
+  },
+  {
+    "OutputKey": "NodePublicIP",
+    "OutputValue": "34.228.57.216",
+    "Description": "Kubernetes Node Public IP"
+  }
+]

@@ -1,0 +1,281 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  'AWS::CloudFormation::Designer':
+    b704cf68-8dbe-4116-bb16-f229923ffb23:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 120
+      z: 1
+      embeds: []
+    5d339967-9665-4371-8734-7329bee8c32e:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 90
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - b704cf68-8dbe-4116-bb16-f229923ffb23
+Resources:
+  KubernetesSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Kubernetes SG
+      GroupName: !Join [ "-", [ kubernetesSG, !Ref AWS::StackName ] ]
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 30000
+          ToPort: 32767
+          CidrIp: 172.31.0.0/16
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 172.31.0.0/16
+        - IpProtocol: tcp
+          FromPort: 2379
+          ToPort: 2380
+          CidrIp: 172.31.0.0/16
+        - IpProtocol: tcp
+          FromPort: 6443
+          ToPort: 6443
+          CidrIp: 172.31.0.0/16
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 10250
+          ToPort: 10252
+          CidrIp: 172.31.0.0/16
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: b704cf68-8dbe-4116-bb16-f229923ffb23
+  kubeadm:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceTypeParam
+      SecurityGroups:
+        - !Ref KubernetesSecurityGroup
+      KeyName: !Ref KeyNameParam
+      Tags:
+        - Key: Name
+          Value: kubernetes-master
+      UserData: !Base64
+        'Fn::Sub': >
+          #!/bin/bash -xe
+
+          yum update -y
+
+          cat << EOF > /etc/yum.repos.d/kubernetes.repo
+
+          [kubernetes]
+
+          name=Kubernetes
+
+          baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+
+          enabled=1
+
+          gpgcheck=1
+
+          repo_gpgcheck=1
+
+          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+
+          https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+          EOF
+
+          wget https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+          wget https://packages.cloud.google.com/yum/doc/yum-key.gpg
+
+          gpg --import yum-key.gpg
+
+          gpg --import rpm-package-key.gpg
+
+          yum install -y docker kubeadm kubelet kubectl --nogpgcheck
+
+          systemctl enable kubelet
+
+          systemctl enable docker
+
+          systemctl start docker
+
+          kubeadm init --ignore-preflight-errors=NumCPU,Mem
+
+          sleep 5
+
+          systemctl restart docker
+
+          sleep 2
+
+          systemctl start kubelet
+
+          sleep 5
+
+          mkdir -p /root/.kube
+
+          sudo cp -i /etc/kubernetes/admin.conf /root/.kube/config
+
+          sudo chown root:root /root/.kube/config
+
+          mkdir -p /home/ec2-user/.kube
+
+          sudo cp -i /etc/kubernetes/admin.conf /home/ec2-user/.kube/config
+
+          sudo chown -R ec2-user:ec2-user /home/ec2-user/.kube/
+
+          export kubever=$(kubectl version | base64 | tr -d '\n')
+
+          sudo kubectl apply -f
+          "https://cloud.weave.works/k8s/net?k8s-version=$kubever"
+
+          pubkey=$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt \
+              | openssl rsa -pubin -outform der 2>/dev/null \
+              | openssl dgst -sha256 -hex \
+              | sed 's/^.* //')
+
+          token=$(kubeadm token list | awk '{ print $1 }' | sed '1d')
+
+          ip=$(ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$/\1/p')
+
+          port=6443
+
+          echo join node to master
+
+          echo "sudo kubeadm join $ip:$port --token=$token --discovery-token-ca-cert-hash sha256:$pubkey" | tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console
+  kubenode:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceTypeParam
+      SecurityGroups:
+        - !Ref KubernetesSecurityGroup
+      KeyName: !Ref KeyNameParam
+      Tags:
+        - Key: Name
+          Value: kubernetes-node
+      UserData: !Base64
+        'Fn::Sub': >
+          #!/bin/bash -xe
+
+          yum update -y
+
+          cat << EOF > /etc/yum.repos.d/kubernetes.repo
+
+          [kubernetes]
+
+          name=Kubernetes
+
+          baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+
+          enabled=1
+
+          gpgcheck=1
+
+          repo_gpgcheck=1
+
+          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+
+          https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+          EOF
+
+          wget https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+          wget https://packages.cloud.google.com/yum/doc/yum-key.gpg
+
+          gpg --import yum-key.gpg
+
+          gpg --import rpm-package-key.gpg
+
+          yum install -y docker kubeadm kubelet kubectl --nogpgcheck
+
+          systemctl enable kubelet
+
+          systemctl enable docker
+
+          systemctl start docker
+Parameters:
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  KeyNameParam:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: Can contain only ASCII characters.
+    Default: ec2-1
+  InstanceTypeParam:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - m1.small
+      - m1.medium
+      - m1.large
+      - m1.xlarge
+      - m2.xlarge
+      - m2.2xlarge
+      - m2.4xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - c1.medium
+      - c1.xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - g2.2xlarge
+      - g2.8xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - i2.xlarge
+      - i2.2xlarge
+      - i2.4xlarge
+      - i2.8xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
+      - hi1.4xlarge
+      - hs1.8xlarge
+      - cr1.8xlarge
+      - cc2.8xlarge
+      - cg1.4xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+Outputs:
+  NodePublicIP:
+    Description: Kubernetes Node Public IP
+    Value: !GetAtt kubenode.PublicIp
+  AdmPublicIP:
+    Description: Kubernetes Master Public IP
+    Value: !GetAtt kubeadm.PublicIp
