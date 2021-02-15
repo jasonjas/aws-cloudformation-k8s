@@ -100,7 +100,7 @@ Resources:
 
           gpg --import rpm-package-key.gpg
 
-          yum install -y docker kubeadm kubelet kubectl --nogpgcheck
+          yum install -y docker kubeadm kubelet kubectl tc --nogpgcheck
 
           systemctl enable kubelet
 
@@ -131,7 +131,7 @@ Resources:
           sudo cp -i /etc/kubernetes/admin.conf /home/ec2-user/.kube/config
 
           sudo chown -R ec2-user:ec2-user /home/ec2-user/.kube/
-
+          
           export kubever=$(kubectl version | base64 | tr -d '\n')
 
           sudo kubectl apply -f

@@ -10,6 +10,7 @@ then
         nodeip=$(cat $output_file | jq -r '.[] | select(.OutputKey=="NodePublicIP") | .OutputValue')
         echo master ip = $masterip
         echo node ip = $nodeip
+        sleep 2
         scp -i ~/.ssh/aws-rsa -o "StrictHostKeyChecking=no" ~/cloudformation/userdata-check.sh ec2-user@$masterip:/tmp/userdata-check.sh > /dev/null
         command=$(ssh -i ~/.ssh/aws-rsa -o "StrictHostKeyChecking=no" ec2-user@$masterip "chmod 754 /tmp/userdata-check.sh; /tmp/userdata-check.sh")
         if [ $? == 0 ]
