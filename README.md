@@ -2,13 +2,12 @@
 AWS Cloudformation template and bash scripts to run using aws cli to provision Kubernetes master and node.
 This is for testing only
 
+note: This is currently only setup to work with a default VPC setup. It might fail if an additional VPC is created.
+
 # Requirements
 * aws cli
 * aws secret access keys
 * ec2 keypair named ec2-1 (can be changed in kubernetes-nodes.yaml)
-
-# VPC Note
-This is currently only setup to work with a default VPC setup. It might fail if an additional VPC is created.
 
 # usage
 ## Create Servers
