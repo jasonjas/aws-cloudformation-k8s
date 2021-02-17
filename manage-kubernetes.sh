@@ -2,6 +2,7 @@
 
 output_dir=~/cloudformation
 ssh_key=~/.ssh/aws-rsa
+keypair=ec2-1
 
 note () {
         echo accepts only 1 or 2 parameters
@@ -12,7 +13,7 @@ note () {
 launch () { 
         output_file=$output_dir/$stackname-output.json
         template_file=$output_dir/kubernetes-nodes.yaml
-        aws cloudformation deploy --template-file $template_file --stack-name $stackname 
+        #aws cloudformation deploy --template-file $template_file --stack-name $stackname --parameter-overrides ParameterKey=KeyNameParam,ParameterValue=$keypair
         if [ $? == 0 ]
         then 
                 aws cloudformation describe-stacks --stack-name $stackname | jq '.["Stacks"][]["Outputs"]' | tee $output_file
@@ -38,6 +39,7 @@ launch () {
 }
 
 delete() {
+	echo removing stack $stackname
         aws cloudformation delete-stack --stack-name $stackname
         if [ $? == 0 ]
         then
@@ -45,27 +47,8 @@ delete() {
                 fi
 }
 
-userdata () { cat <<EOF
-	wait_file() {
-	  local file="$1"; shift
-	    local wait_seconds="${1:-10}"; shift # 10 seconds as default timeout
-
-	      until test $((wait_seconds--)) -eq 0 -o -e "$file" ; do sleep 1; done
-
-		((++wait_seconds))
-	}
-	# Wait at most 120 seconds for the server.log file to appear
-	server_log=/var/log/user-data.log;
-	wait_file "$server_log" 120 || {
-		  echo "userdata log file missing after waiting for $? seconds: '$server_log'"
-	  exit 1
-	}
-	cat $server_log
-EOF
-}
-
 mkdir -p $output_dir
-userdata > $output_dir/userdata-check.sh
+cp userdata-check.sh $output_dir
 cp kubernetes-nodes.yaml $output_dir
 
 if [ $# -eq 0 ]

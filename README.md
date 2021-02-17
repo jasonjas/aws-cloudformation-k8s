@@ -7,7 +7,14 @@ note: This is currently only setup to work with a default VPC setup. It might fa
 # Requirements
 * aws cli
 * aws secret access keys
-* ec2 keypair named ec2-1 (can be changed in kubernetes-nodes.yaml)
+* ec2 keypair
+
+# Setup
+You can set the 3 main variables at the top of manage-kubernetes.sh
+	output_dir = the location where files will be stored locally
+	ssh_key = location of the ssh key used to log in to the servers
+        keypair = the key pair used for the EC2 servers
+
 
 # usage
 ## Create Servers
