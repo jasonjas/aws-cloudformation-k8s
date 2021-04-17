@@ -8,7 +8,8 @@ wait_file() {
 }
 # Wait at most 240 seconds for the server.log file to appear
 server_log=/var/log/user-data.log; 
-wait_file "$server_log" 240 || {
+wait_seconds=1
+wait_file "$server_log" $wait_seconds || {
   echo "userdata log file missing after waiting for $wait_seconds seconds: '$server_log'"
   exit 1
 }

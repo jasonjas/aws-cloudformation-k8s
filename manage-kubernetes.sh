@@ -6,8 +6,8 @@ keypair=ec2-1
 
 note () {
         echo accepts only 1 or 2 parameters
-        echo '$0 [launch | delete | connect-node | get-ssh] stack-name'
-        echo '$0 [launch | delete | connect-node | get-ssh]'
+        echo '$0 [launch | create | delete | connect-node | get-ssh] stack-name'
+        echo '$0 [launch | create | delete | connect-node | get-ssh]'
 }
 
 get_ssh() {
@@ -32,7 +32,14 @@ connect_node() {
 		echo $command
 		ssh -i $ssh_key -o "StrictHostKeyChecking=no" ec2-user@$nodeip "$command"
 	else
+		numchars=$((${#command}+27))
+		echo 
+		echo 
+		awk -v i=$numchars 'BEGIN { OFS="*"; $i="*"; print }'
 		echo error with user-data file: $command
+		awk -v i=$numchars 'BEGIN { OFS="*"; $i="*"; print }'
+		echo
+		echo
 	fi
 }
 
@@ -65,7 +72,7 @@ then
 	exit 1
 fi
 
-if [ $1 == "launch" ] || [ $1 == "delete" ] || [ $1 == "connect-node" ] || [ $1 == "get-ssh" ]
+if [ $1 == "launch" ] || [ $1 == "delete" ] || [ $1 == "connect-node" ] || [ $1 == "get-ssh" ] || [ $1 == "create" ]
 then
 	action=$1
 	if [ $action == "connect-node" ]
@@ -74,6 +81,9 @@ then
 	elif [ $action == "get-ssh" ]
 	then
 		action=get_ssh
+	elif [ $action == "create" ]
+	then
+		action=launch
 	fi
         if [ $# -eq 1 ]
         then 
