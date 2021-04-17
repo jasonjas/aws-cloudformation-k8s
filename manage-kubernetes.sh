@@ -25,10 +25,11 @@ connect_node() {
 	echo node ip = $nodeip
 	sleep 2
 	echo wait for cluster to create and then connect node
-	scp -i $ssh_key -o "StrictHostKeyChecking=no" $output_dir/userdata-check.sh ec2-user@$masterip:/tmp/userdata-check.sh > /dev/null
-	command=$(ssh -i $ssh_key -o "StrictHostKeyChecking=no" ec2-user@$masterip "chmod 754 /tmp/userdata-check.sh; /tmp/userdata-check.sh")
+	scp -i $ssh_key -o "StrictHostKeyChecking=no" $output_dir/userdata-check.sh ec2-user@$masterip:/tmp/userdata-check.sh 
+	command=$(ssh -i $ssh_key -o "StrictHostKeyChecking=no" ec2-user@$masterip "chmod 754 /tmp/userdata-check.sh; sudo /tmp/userdata-check.sh")
 	if [ $? == 0 ]
 	then
+		echo $command
 		ssh -i $ssh_key -o "StrictHostKeyChecking=no" ec2-user@$nodeip "$command"
 	else
 		echo error with user-data file: $command
