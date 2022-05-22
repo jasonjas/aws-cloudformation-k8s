@@ -45,7 +45,7 @@ connect_node() {
 
 launch () { 
         template_file=$output_dir/kubernetes-nodes.yaml
-        aws cloudformation deploy --template-file $template_file --stack-name $stackname --parameter-overrides ParameterKey=KeyNameParam,ParameterValue=$keypair
+        aws cloudformation deploy --template-file $template_file --stack-name $stackname --parameter-overrides KeyNameParam=$keypair
         if [ $? == 0 ]
         then 
 		connect_node
